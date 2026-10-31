@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinical Care Portal (Prototype Demo)</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Environment & Synthetic Data Warning Banner -->
+  <div class="env-banner">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span class="env-banner-badge">Prototype Demo Mode</span>
+      <span>Synthetic Patient Records Only &bull; Predefined Demonstration Environment</span>
+    </div>
+    <div class="env-banner-sync">
+      <span class="sync-dot"></span>
+      <span id="syncStatusText">Hybrid Sync: Ready (Local Node)</span>
+    </div>
+  </div>
+
+  <!-- Main Top Header -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-logo" id="headerLogo">&#10010;</div>
+      <div>
+        <div class="brand-title">St. Jude Metropolitan Clinic</div>
+        <div class="brand-subtitle">Clinical Information Management System &bull; Prototype v1.2</div>
+      </div>
+    </div>
+
+    <!-- User navigation (hidden when unauthenticated) -->
+    <div class="user-nav" id="userNav" style="display: none;">
+      <div class="user-profile-badge">
+        <span class="role-tag" id="userRoleBadge">Role</span>
+        <span style="font-weight: 600; font-size: 0.85rem;" id="userNameDisplay">User Name</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);" id="userStaffId">(Staff ID)</span>
+      </div>
+      <!-- Visible Logout Button: Destroys session, returns to role selection login -->
+      <button class="btn-logout" id="btnLogout" title="Log out of current session and return to role selection">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Log Out
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       1. ROLE SELECTION & LOGIN SCREEN
+       ========================================================================= -->
+  <main class="auth-wrapper" id="authScreen">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h1>Staff Role Selection &amp; Login</h1>
+        <p>Select your intended role and enter authorized credentials to access your dashboard.</p>
+      </div>
+
+      <!-- Alert Box for feedback, error, and role mismatch notice -->
+      <div class="alert-box" id="authAlert">
+        <div id="authAlertMessage"></div>
+      </div>
+
+      <!-- 3 Clear Role Selection Options -->
+      <label class="section-label">1. Select Intended Role</label>
+      <div class="role-grid" id="roleGrid">
+        
+        <!-- Doctor Option -->
+        <div class="role-card doctor" data-role="DOCTOR" id="roleCardDoctor">
+          <div class="role-check-indicator">&check;</div>
+          <div class="role-icon" style="color: var(--doctor-accent);">
+            <!-- Stethoscope SVG -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4.8 2.4A2.4 2.4 0 0 0 2.4 4.8v4.8a7.2 7.2 0 0 0 14.4 0V4.8a2.4 2.4 0 0 0-2.4-2.4"></path>
+              <path d="M9.6 16.8v2.4a4.8 4.8 0 0 0 4.8 4.8h.4a4.8 4.8 0 0 0 4.8-4.8v-2.4"></path>
+              <circle cx="19.2" cy="14.4" r="2.4"></circle>
+            </svg>
+          </div>
+          <div class="role-title">Doctor</div>
+          <div class="role-desc">Clinical consultations, diagnoses, medication orders &amp; review flags</div>
+        </div>
+
+        <!-- Nurse Option -->
+        <div class="role-card nurse" data-role="NURSE" id="roleCardNurse">
+          <div class="role-check-indicator">&check;</div>
+          <div class="role-icon" style="color: var(--nurse-accent);">
+            <!-- Nurse / Vital pulse SVG -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+            </svg>
+          </div>
+          <div class="role-title">Nurse</div>
+          <div class="role-desc">Medication administration tasks, vitals observation &amp; nursing records</div>
+        </div>
+
+        <!-- Administrator Option -->
+        <div class="role-card administrator" data-role="ADMINISTRATOR" id="roleCardAdmin">
+          <div class="role-check-indicator">&check;</div>
+          <div class="role-icon" style="color: var(--admin-accent);">
+            <!-- Shield / Settings SVG -->
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div class="role-title">Administrator</div>
+          <div class="role-desc">Staff user management, clinic settings, devices, sync &amp; audit logs</div>
+        </div>
+
+      </div>
+
+      <!-- Credentials Form -->
+      <form id="loginForm">
+        <label class="section-label">2. Enter Staff Credentials</label>
+
+        <div class="form-group">
+          <label class="form-label" for="inputUsername">Staff Username</label>
+          <input type="text" id="inputUsername" class="form-input" placeholder="e.g. dr.sarah or nurse.james" autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inputPassword">Staff Password</label>
+          <input type="password" id="inputPassword" class="form-input" placeholder="Enter password" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnLoginSubmit">
+          Authenticate &amp; Open Dashboard
+        </button>
+      </form>
+
+      <!-- Predefined Prototype Demo Accounts Box -->
+      <div class="demo-accounts-box">
+        <div class="demo-box-header">
+          <span class="demo-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            Prototype Evaluator Quick-Fill
+          </span>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">One-click test accounts</span>
+        </div>
+
+        <div class="demo-pill-grid">
+          <button type="button" class="btn-demo-pill" id="btnFillDoctor">
+            <span style="color: var(--doctor-accent); font-weight: bold;">&#9679;</span> Doctor Demo (Dr. Sarah)
+          </button>
+          <button type="button" class="btn-demo-pill" id="btnFillNurse">
+            <span style="color: var(--nurse-accent); font-weight: bold;">&#9679;</span> Nurse Demo (James RN)
+          </button>
+          <button type="button" class="btn-demo-pill" id="btnFillAdmin">
+            <span style="color: var(--admin-accent); font-weight: bold;">&#9679;</span> Admin Demo (Elena)
+          </button>
+          <button type="button" class="btn-demo-pill mismatch-tester" id="btnTestMismatch" title="Tests role mismatch rejection: Doctor credentials + Nurse role selected">
+            &#9888; Test Role Mismatch Security
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       2. DOCTOR DASHBOARD
+       ========================================================================= -->
+  <section class="dashboard-container" id="doctorDashboard" style="display: none;">
+    <div class="dashboard-hero">
+      <div>
+        <div class="dashboard-hero-title" style="color: var(--doctor-accent);">Doctor Clinical Dashboard</div>
+        <div class="dashboard-hero-desc">Patient search, clinical consultations, medical orders &amp; review flags</div>
+      </div>
+      <div class="dashboard-stats">
+        <div class="stat-chip">
+          <span>Patients Under Care</span>
+          <span class="stat-number" id="docTotalPatients">4</span>
+        </div>
+        <div class="stat-chip">
+          <span>Review Flags Active</span>
+          <span class="stat-number" style="color: var(--danger);" id="docFlaggedCount">2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctor View Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab-btn active" data-tab="doc-patients">
+        Patients &amp; Medical History
+      </button>
+      <button class="nav-tab-btn" data-tab="doc-flags">
+        Clinical Review Flags <span class="tab-badge" id="badgeFlaggedCount">2</span>
+      </button>
+    </div>
+
+    <!-- Doctor Main Split View -->
+    <div class="split-view">
+      <!-- Left side: Patient search & list -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Patient Directory</span>
+          <span class="badge badge-info">Synthetic</span>
+        </div>
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color);">
+          <input type="text" id="docSearchInput" class="form-input" placeholder="Search patient name, MRN, room...">
+        </div>
+        <div id="docPatientList" style="max-height: 520px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Right side: Patient chart & actions -->
+      <div class="card" id="docChartContainer">
+        <div class="card-header" style="justify-content: space-between;">
+          <span class="card-title" id="docChartTitle">Select a patient to view chart</span>
+          <div id="docChartActions" style="display: none; gap: 8px;">
+            <button class="btn-sm btn-outline" id="btnToggleFlag">Toggle Review Flag</button>
+            <button class="btn-sm btn-doctor" id="btnOpenNewConsultModal">+ New Consultation</button>
+            <button class="btn-sm btn-doctor" id="btnOpenNewMedModal">+ Order Medication</button>
+          </div>
+        </div>
+        <div class="card-body" id="docChartBody">
+          <p style="color: var(--text-muted); text-align: center; padding: 40px 0;">
+            Select a synthetic patient from the directory on the left to review medical history, write consultations, and order medications.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       3. NURSE DASHBOARD
+       ========================================================================= -->
+  <section class="dashboard-container" id="nurseDashboard" style="display: none;">
+    <div class="dashboard-hero">
+      <div>
+        <div class="dashboard-hero-title" style="color: var(--nurse-accent);">Nurse Clinical Care Dashboard</div>
+        <div class="dashboard-hero-desc">Medication administration (eMAR), nursing observations &amp; shift updates</div>
+      </div>
+      <div class="dashboard-stats">
+        <div class="stat-chip">
+          <span>Pending Med Tasks</span>
+          <span class="stat-number" id="nursePendingTasksCount">3</span>
+        </div>
+        <div class="stat-chip">
+          <span>Admitted Inpatients</span>
+          <span class="stat-number" id="nurseInpatientCount">3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nurse Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab-btn active" data-nurse-tab="nurse-tasks">
+        Medication Administration Tasks (eMAR)
+      </button>
+      <button class="nav-tab-btn" data-nurse-tab="nurse-patients">
+        Ward Patients &amp; Observations
+      </button>
+    </div>
+
+    <!-- Nurse Task View -->
+    <div id="nurseTasksTab">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Medication Administration &amp; Nursing Care Tasks</span>
+          <span class="badge badge-warning">Action Required</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Patient / Bed</th>
+                <th>Scheduled Time</th>
+                <th>Task / Medication</th>
+                <th>Allergies Check</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="nurseTasksTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nurse Patients & Observations Split View -->
+    <div id="nursePatientsTab" style="display: none;" class="split-view">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Assigned Patients</span>
+        </div>
+        <div id="nursePatientList" style="max-height: 520px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="card" id="nurseChartContainer">
+        <div class="card-header">
+          <span class="card-title" id="nurseChartTitle">Select Patient</span>
+          <div id="nurseChartActions" style="display: none; gap: 8px;">
+            <button class="btn-sm btn-nurse" id="btnOpenRecordVitalsModal">+ Record Vitals &amp; Observations</button>
+            <button class="btn-sm btn-outline" id="btnOpenUpdateCareModal">+ Care Progress Note</button>
+          </div>
+        </div>
+        <div class="card-body" id="nurseChartBody">
+          <p style="color: var(--text-muted); text-align: center; padding: 40px 0;">
+            Select a patient to view authorized nursing care plans and record observations.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       4. ADMINISTRATOR DASHBOARD
+       ========================================================================= -->
+  <section class="dashboard-container" id="adminDashboard" style="display: none;">
+    <div class="dashboard-hero">
+      <div>
+        <div class="dashboard-hero-title" style="color: var(--admin-accent);">Administrator System &amp; Security Console</div>
+        <div class="dashboard-hero-desc">User management, role permissions, clinic settings, devices, sync &amp; audit trail</div>
+      </div>
+      <div class="dashboard-stats">
+        <div class="stat-chip">
+          <span>Active Staff Accounts</span>
+          <span class="stat-number" id="adminTotalUsers">3</span>
+        </div>
+        <div class="stat-chip">
+          <span>Audit Events Logged</span>
+          <span class="stat-number" id="adminAuditCount">0</span>
+        </div>
+        <div class="stat-chip">
+          <span>Sync Engine</span>
+          <span class="stat-number" style="color: var(--success); font-size: 0.95rem;">Healthy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab-btn active" data-admin-tab="admin-users">User Management</button>
+      <button class="nav-tab-btn" data-admin-tab="admin-roles">Role Configuration &amp; RBAC Matrix</button>
+      <button class="nav-tab-btn" data-admin-tab="admin-settings">Clinic Settings</button>
+      <button class="nav-tab-btn" data-admin-tab="admin-devices">Device Management</button>
+      <button class="nav-tab-btn" data-admin-tab="admin-sync">Synchronization Status</button>
+      <button class="nav-tab-btn" data-admin-tab="admin-audit">Audit Logs</button>
+    </div>
+
+    <!-- Tab 1: User Management -->
+    <div id="adminTabUsers" class="admin-tab-content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Staff Accounts &amp; Authorized Roles</span>
+          <button class="btn-sm btn-admin" id="btnOpenNewUserModal">+ Create New Staff Account</button>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Authorized Role</th>
+                <th>Staff ID</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Role Configuration Matrix -->
+    <div id="adminTabRoles" class="admin-tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Role Authorization &amp; Access Control Matrix</span>
+          <span class="badge badge-purple">Server-Enforced RBAC</span>
+        </div>
+        <div class="card-body">
+          <p style="margin-bottom: 16px; font-size: 0.9rem; color: var(--text-muted);">
+            In this clinical prototype, role selection on the login interface requests a specific interface, but access permissions are strictly enforced on the server. A user cannot obtain unauthorized permissions simply by choosing another role.
+          </p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Module / Function</th>
+                <th>Doctor</th>
+                <th>Nurse</th>
+                <th>Administrator</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Patient Search &amp; Synthetic Charts</strong></td>
+                <td><span class="badge badge-success">&#10003; Full Clinical</span></td>
+                <td><span class="badge badge-success">&#10003; Nursing View</span></td>
+                <td><span class="badge badge-warning">&#8722; Admin Only Metadata</span></td>
+              </tr>
+              <tr>
+                <td><strong>Clinical Consultations &amp; Review Flags</strong></td>
+                <td><span class="badge badge-success">&#10003; Create &amp; Toggle</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+              </tr>
+              <tr>
+                <td><strong>Medication Orders (Prescribing)</strong></td>
+                <td><span class="badge badge-success">&#10003; Prescribe Drugs</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+              </tr>
+              <tr>
+                <td><strong>Medication Administration (eMAR Execution)</strong></td>
+                <td><span class="badge badge-danger">&#10007; Read-Only</span></td>
+                <td><span class="badge badge-success">&#10003; Record Administration</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+              </tr>
+              <tr>
+                <td><strong>Nursing Observations &amp; Vitals Recording</strong></td>
+                <td><span class="badge badge-info">&#10003; Read Only</span></td>
+                <td><span class="badge badge-success">&#10003; Input &amp; Record</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+              </tr>
+              <tr>
+                <td><strong>User Account Management &amp; Role Assignment</strong></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-success">&#10003; Full Control</span></td>
+              </tr>
+              <tr>
+                <td><strong>Clinic Settings &amp; Security Policies</strong></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-success">&#10003; Full Control</span></td>
+              </tr>
+              <tr>
+                <td><strong>Device Management &amp; Tablet Fleet</strong></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-success">&#10003; Full Control</span></td>
+              </tr>
+              <tr>
+                <td><strong>Audit Logs &amp; Access Trail Inspection</strong></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-danger">&#10007; Denied</span></td>
+                <td><span class="badge badge-success">&#10003; Full Audit View</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Clinic Settings -->
+    <div id="adminTabSettings" class="admin-tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Clinic Configuration &amp; Policies</span>
+        </div>
+        <div class="card-body">
+          <div id="adminSettingsList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Device Management -->
+    <div id="adminTabDevices" class="admin-tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Registered Clinical Tablets &amp; Terminals</span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Device Name</th>
+                <th>Device Type</th>
+                <th>Station / Room</th>
+                <th>IP Address</th>
+                <th>Sync Health</th>
+                <th>Last Synced</th>
+              </tr>
+            </thead>
+            <tbody id="adminDevicesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Synchronization Status -->
+    <div id="adminTabSync" class="admin-tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Offline Synchronization Queue &amp; Engine</span>
+          <button class="btn-sm btn-admin" id="btnTriggerManualSync">&#8635; Trigger Full Sync Cycle</button>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
+            <div class="stat-chip">
+              <span>Engine Status</span>
+              <span class="stat-number" style="color: var(--success); font-size: 1.1rem;">HYBRID_OFFLINE_READY</span>
+            </div>
+            <div class="stat-chip">
+              <span>Pending Queue</span>
+              <span class="stat-number" id="syncPendingCount">0</span>
+            </div>
+            <div class="stat-chip">
+              <span>Synced Queue Records</span>
+              <span class="stat-number" id="syncSuccessCount">0</span>
+            </div>
+          </div>
+          <h4 style="font-size: 0.9rem; margin-bottom: 10px;">Recent Offline Synchronization Queue Events</h4>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Entity</th>
+                <th>Action</th>
+                <th>Queue Status</th>
+                <th>Created At</th>
+                <th>Synced At</th>
+              </tr>
+            </thead>
+            <tbody id="adminSyncTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 6: Audit Logs -->
+    <div id="adminTabAudit" class="admin-tab-content" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Access &amp; Security Audit Trail</span>
+          <div style="display: flex; gap: 8px;">
+            <select id="auditFilterStatus" class="form-input" style="padding: 4px 8px; font-size: 0.8rem; width: auto;">
+              <option value="">All Statuses</option>
+              <option value="ALLOWED">Allowed</option>
+              <option value="DENIED">Denied</option>
+              <option value="MISMATCH">Role Mismatch</option>
+              <option value="SYSTEM">System</option>
+            </select>
+            <button class="btn-sm btn-outline" id="btnRefreshAuditLogs">&#8635; Refresh Logs</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User / Account</th>
+                <th>Role</th>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="adminAuditTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       MODALS FOR USER ACTIONS
+       ========================================================================= -->
+
+  <!-- Modal: Doctor New Consultation -->
+  <div class="modal-overlay" id="modalDoctorConsult">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Record Clinical Consultation</h3>
+        <button type="button" class="btn-sm btn-outline modal-close-btn">&times;</button>
+      </div>
+      <form id="formDoctorConsult">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Patient</label>
+            <input type="text" id="consultPatientName" class="form-input" readonly>
+            <input type="hidden" id="consultPatientId">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chief Complaint / Clinical Presentation</label>
+            <input type="text" id="consultChiefComplaint" class="form-input" placeholder="e.g. Follow-up after medication adjustment" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Clinical Assessment</label>
+            <textarea id="consultAssessment" class="form-input" rows="3" placeholder="Enter clinical assessment & observations..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Treatment Plan &amp; Orders</label>
+            <textarea id="consultPlan" class="form-input" rows="3" placeholder="Enter treatment plan, interventions, follow-up..." required></textarea>
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="consultReviewFlag" style="width: 18px; height: 18px;">
+            <label for="consultReviewFlag" style="font-weight: 600; font-size: 0.9rem; color: var(--danger);">
+              Flag Patient for Active Clinical Review
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sm btn-outline modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-sm btn-doctor">Save Consultation Note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Doctor New Medication Order -->
+  <div class="modal-overlay" id="modalDoctorMed">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Prescribe Medication Order</h3>
+        <button type="button" class="btn-sm btn-outline modal-close-btn">&times;</button>
+      </div>
+      <form id="formDoctorMed">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Patient</label>
+            <input type="text" id="medPatientName" class="form-input" readonly>
+            <input type="hidden" id="medPatientId">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Medication Name</label>
+            <input type="text" id="medName" class="form-input" placeholder="e.g. Enoxaparin (Lovenox)" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dosage &amp; Strength</label>
+            <input type="text" id="medDosage" class="form-input" placeholder="e.g. 40 mg" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Route of Administration</label>
+            <select id="medRoute" class="form-input">
+              <option value="Oral">Oral (PO)</option>
+              <option value="IV Bolus">IV Bolus</option>
+              <option value="IV Piggyback">IV Piggyback</option>
+              <option value="Subcutaneous">Subcutaneous (SubQ)</option>
+              <option value="Intramuscular">Intramuscular (IM)</option>
+              <option value="Inhalation">Inhalation (Nebulizer)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Frequency / Schedule</label>
+            <input type="text" id="medFrequency" class="form-input" placeholder="e.g. Once daily, BID, Q8H" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sm btn-outline modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-sm btn-doctor">Sign &amp; Route to Nursing eMAR</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nurse Record Vitals & Observations -->
+  <div class="modal-overlay" id="modalNurseVitals">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Record Nursing Vitals &amp; Observations</h3>
+        <button type="button" class="btn-sm btn-outline modal-close-btn">&times;</button>
+      </div>
+      <form id="formNurseVitals">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Patient</label>
+            <input type="text" id="vitalPatientName" class="form-input" readonly>
+            <input type="hidden" id="vitalPatientId">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">BP Systolic (mmHg)</label>
+              <input type="number" id="vitalBpSys" class="form-input" value="120" min="60" max="260" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">BP Diastolic (mmHg)</label>
+              <input type="number" id="vitalBpDia" class="form-input" value="80" min="40" max="160" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Heart Rate (BPM)</label>
+              <input type="number" id="vitalHr" class="form-input" value="72" min="30" max="220" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Resp Rate (/min)</label>
+              <input type="number" id="vitalRr" class="form-input" value="16" min="8" max="60" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">SpO2 (%)</label>
+              <input type="number" id="vitalSpo2" class="form-input" value="98" min="50" max="100" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label">Temp (&deg;C)</label>
+              <input type="number" step="0.1" id="vitalTemp" class="form-input" value="36.8" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Intake (mL)</label>
+              <input type="number" id="vitalIntake" class="form-input" value="500">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Output (mL)</label>
+              <input type="number" id="vitalOutput" class="form-input" value="450">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nursing Observation / Shift Notes</label>
+            <textarea id="vitalNotes" class="form-input" rows="2" placeholder="e.g. Patient alert and oriented x4. Tolerated ambulation in hallway."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sm btn-outline modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-sm btn-nurse">Submit Nursing Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nurse Progress Note -->
+  <div class="modal-overlay" id="modalNurseCareNote">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Update Nursing Care Plan / Record</h3>
+        <button type="button" class="btn-sm btn-outline modal-close-btn">&times;</button>
+      </div>
+      <form id="formNurseCareNote">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Patient</label>
+            <input type="text" id="careNotePatientName" class="form-input" readonly>
+            <input type="hidden" id="careNotePatientId">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Care Plan Progress / Daily Shift Note</label>
+            <textarea id="careNoteText" class="form-input" rows="4" placeholder="Enter care updates, wound assessments, family communications, patient responses..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sm btn-outline modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-sm btn-nurse">Append to Nursing Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Admin Create User -->
+  <div class="modal-overlay" id="modalAdminUser">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; font-weight: 700;">Create Staff User Account</h3>
+        <button type="button" class="btn-sm btn-outline modal-close-btn">&times;</button>
+      </div>
+      <form id="formAdminUser">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Authorized Role</label>
+            <select id="newUserRole" class="form-input" required>
+              <option value="DOCTOR">Doctor (Physician)</option>
+              <option value="NURSE">Nurse (Clinical Care)</option>
+              <option value="ADMINISTRATOR">Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="newUserName" class="form-input" placeholder="e.g. Dr. Robert Chen, MD" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="newUserUsername" class="form-input" placeholder="e.g. dr.robert" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Staff ID</label>
+            <input type="text" id="newUserStaffId" class="form-input" placeholder="e.g. DOC-9941" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Initial Password</label>
+            <input type="password" id="newUserPassword" class="form-input" placeholder="Enter secure password" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-sm btn-outline modal-close-btn">Cancel</button>
+          <button type="submit" class="btn-sm btn-admin">Create Staff Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
